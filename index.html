@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vinkælderen</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#1a1a1a;background:#f5f0eb;overflow-x:hidden}
+.app{max-width:960px;margin:0 auto;padding:16px;width:100%}
+h1{font-size:20px;font-weight:600;color:#1a1a1a;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid #ddd}
+.tab{padding:8px 16px;cursor:pointer;font-size:13px;border-radius:6px 6px 0 0;background:none;border:none;color:#666}
+.tab.active{color:#1a1a1a;font-weight:500;border-bottom:2px solid #1a1a1a}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border-radius:10px;padding:16px;margin-bottom:12px;border:0.5px solid #e0d8d0}
+.slot{height:52px;border-radius:4px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;font-weight:500;cursor:pointer;padding:2px;line-height:1.2;border:1px solid rgba(0,0,0,.08);position:relative}
+.slot:hover{opacity:.8}
+.slot.empty{background:#f0ede8;color:#aaa;cursor:default}
+.slot.roed{background:#f9d0cc;color:#7a1f1a}
+.slot.hvid{background:#fdf3d0;color:#6b5300}
+.slot.rose{background:#fcd6e2;color:#8a1a40}
+.slot.bobler{background:#d0e8fc;color:#0a3d6b}
+.slot.portvin{background:#e8d0e8;color:#5a1a5a}
+.slot.spiritus{background:#f0e0c8;color:#6b3a1f}
+.slot.on-koel::after{content:'❄';position:absolute;top:2px;right:3px;font-size:9px}
+.col-hdr{text-align:center;font-size:11px;font-weight:500;color:#888;padding:4px 0}
+.row-lbl{font-size:11px;font-weight:500;color:#888;display:flex;align-items:center;justify-content:flex-end;padding-right:6px}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.badge.roed{background:#f9d0cc;color:#7a1f1a}
+.badge.hvid{background:#fdf3d0;color:#6b5300}
+.badge.rose{background:#fcd6e2;color:#8a1a40}
+.badge.bobler{background:#d0e8fc;color:#0a3d6b}
+.badge.portvin{background:#e8d0e8;color:#5a1a5a}
+.badge.spiritus{background:#f0e0c8;color:#6b3a1f}
+.koel-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:500;background:#e8f4fd;color:#1565c0;border:0.5px solid #90caf9}
+.btn{padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;border:1px solid #ccc;background:#fff;color:#1a1a1a}
+.btn:hover{background:#f5f0eb}
+.btn.primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn.primary:hover{opacity:.85}
+.btn.danger{border-color:#e24b4a;color:#a32d2d}
+.btn.danger:hover{background:#fcebeb}
+.btn.sm{padding:3px 10px;font-size:11px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:12px;color:#666;font-weight:500}
+.form-group input,.form-group select{font-size:13px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;background:#fff}
+.form-group.full{grid-column:1/-1}
+.section-hdr{font-size:13px;font-weight:500;margin:12px 0 8px;color:#1a1a1a}
+.divider{height:1px;background:#e0d8d0;margin:14px 0}
+.list-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:580px}
+.list-table th{text-align:left;padding:6px 8px;background:#f5f0eb;font-weight:500;font-size:12px;position:sticky;top:0;z-index:2;border-bottom:1px solid #e0d8d0}
+.list-table td{padding:6px 8px;border-bottom:0.5px solid #e8e0d8;vertical-align:middle}
+.list-table tr:hover td{background:#faf7f3;cursor:pointer}
+.antal-badge{display:inline-block;padding:1px 8px;background:#f0ede8;border-radius:10px;font-size:12px;font-weight:500}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:8px;padding:14px;text-align:center;border:0.5px solid #e0d8d0}
+.stat-val{font-size:24px;font-weight:600;color:#1a1a1a}
+.stat-lbl{font-size:12px;color:#888;margin-top:3px}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:22px;width:460px;max-width:95vw;max-height:92vh;overflow-y:auto;border:0.5px solid #e0d8d0}
+.modal h3{font-size:16px;font-weight:600;margin-bottom:3px}
+.modal-meta{font-size:12px;color:#888;margin-bottom:14px}
+.slot-pill{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;background:#f0ede8;color:#666;border:0.5px solid #ddd;cursor:pointer;display:inline-block;margin:2px}
+.slot-pill.on-koel{background:#e8f4fd;color:#1565c0;border-color:#90caf9}
+.slot-pill.on-koel::before{content:'❄ '}
+.slot-pill.drukket{background:#f0ede8;color:#bbb;text-decoration:line-through;cursor:default;border-color:#e0d8d0}
+.pill-menu{position:fixed;background:#fff;border:0.5px solid #ccc;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;padding:4px;min-width:160px}
+.pill-menu-item{padding:7px 12px;font-size:12px;cursor:pointer;border-radius:5px;display:block;width:100%;text-align:left;background:none;border:none;color:#1a1a1a}
+.pill-menu-item:hover{background:#f5f0eb}
+.pill-menu-item.danger{color:#a32d2d}
+.pill-menu-item.danger:hover{background:#fcebeb}
+.slot-pill.on-koel::before{content:'❄ '}
+.info-lbl{font-size:12px;color:#888;min-width:110px;flex-shrink:0}
+.info-val{font-size:12px;color:#1a1a1a}
+.bem-edit{width:100%;font-size:12px;padding:8px;border-radius:6px;border:1px solid #ccc;resize:vertical;min-height:64px;font-family:inherit}
+.pris-box{background:#f5f0eb;border-radius:8px;padding:12px;margin-bottom:14px}
+.pris-estimat{font-size:18px;font-weight:600;color:#1a6b2e}
+.pris-note{font-size:11px;color:#666;margin-top:3px}
+.spinner{width:14px;height:14px;border:2px solid #ddd;border-top-color:#7c3aed;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.foto-zone{border:2px dashed #ccc;border-radius:8px;padding:24px;text-align:center;cursor:pointer;margin-bottom:12px;transition:background .15s}
+.foto-zone:hover{background:#f5f0eb}
+.foto-preview{max-width:100%;max-height:180px;border-radius:6px;margin-bottom:10px;display:block}
+.ai-result-box{background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:#5b21b6}
+.slot-row{display:grid;grid-template-columns:1fr 1fr 1fr 32px;gap:6px;align-items:end;margin-bottom:8px}
+.remove-slot-btn{width:28px;height:28px;border-radius:50%;border:1px solid #ccc;background:none;cursor:pointer;font-size:15px;color:#888;display:flex;align-items:center;justify-content:center}
+.remove-slot-btn:hover{background:#fcebeb;color:#a32d2d;border-color:#e24b4a}
+.tab-bar-reol{display:flex;gap:6px;margin-bottom:12px}
+.rtab{padding:5px 14px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid #ccc;background:none;color:#666}
+.rtab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#666}
+.leg-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.sync-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:#888;margin-bottom:12px;padding:8px 12px;background:#fff;border-radius:8px;border:0.5px solid #e0d8d0}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
+.sync-dot.ok{background:#1a6b2e}
+.sync-dot.err{background:#a32d2d}
+.sync-dot.loading{background:#b45309;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.search-bar{width:100%;font-size:13px;padding:8px 12px;border:1px solid #ccc;border-radius:6px;margin-bottom:12px;background:#fff}
+@media(max-width:600px){
+  .app{padding:8px}
+  h1{font-size:16px;margin-bottom:10px}
+  .tabs{gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tab{padding:8px 10px;font-size:12px;white-space:nowrap;flex-shrink:0}
+  .sync-bar{font-size:11px;padding:6px 8px}
+  .sync-bar span[style*="margin-left:auto"]{gap:3px}
+  .sync-bar .btn{padding:3px 7px;font-size:11px}
+  #stat-top{grid-template-columns:1fr !important}
+  #stat-top>div:first-child{flex-direction:row !important}
+  #stat-top>div:first-child .stat-card{flex:1}
+  .card{padding:12px}
+  .stats{grid-template-columns:1fr 1fr}
+  .list-table{font-size:11px}
+  .list-table th,.list-table td{padding:5px 5px}
+  .modal{width:96vw;padding:14px;max-height:85vh}
+  .form-grid{grid-template-columns:1fr}
+  .form-group.full{grid-column:1}
+  .slot-row{grid-template-columns:1fr 1fr 1fr 32px}
+  #stat-lagervaerdi>div:first-child{flex-direction:column !important}
+  #stat-lagervaerdi>div:first-child>div:last-child{border-left:none !important;border-top:0.5px solid #e0d8d0;padding-left:0 !important;padding-top:12px;margin-top:8px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>🍷 Vinkælderen</h1>
+
+<div class="sync-bar">
+  <div class="sync-dot" id="sync-dot"></div>
+  <span id="sync-status">Forbinder til Google Sheets...</span>
+  <span style="margin-left:auto;display:flex;gap:4px">
+    <button class="btn sm" onclick="syncNow()">Synk nu</button>
+    <button class="btn sm" onclick="exportExcel()">Excel</button>
+    <button class="btn sm danger" onclick="genskrivSheets()">Genskriv Sheets</button>
+  </span>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('overblik')">Overblik</button>
+  <button class="tab" onclick="showTab('liste')">Lagerliste</button>
+  <button class="tab" onclick="showTab('hylde')">Hyldeplan</button>
+  <button class="tab" onclick="showTab('tilfoej')">Tilføj vin</button>
+  <button class="tab" onclick="showTab('historik')">Historik</button>
+</div>
+
+<!-- HYLDEPLAN -->
+<div id="tab-hylde" class="panel">
+  <div class="card">
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#f9d0cc"></div>Rød</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#fdf3d0"></div>Hvid</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#fcd6e2"></div>Rosé</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#d0e8fc"></div>Bobler</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#e8d0e8"></div>Portvin</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#f0e0c8"></div>Spiritus</div>
+      <div class="leg-item"><span>❄</span> På køl</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#f0ede8;border:1px solid #ccc"></div>Tom</div>
+    </div>
+    <div class="tab-bar-reol">
+      <button class="rtab active" onclick="showReol('α',this)">Reol α</button>
+      <button class="rtab" onclick="showReol('β',this)">Reol β</button>
+      <button class="rtab" onclick="showReol('γ',this)">Reol γ</button>
+      <button class="rtab" onclick="showReol('δ',this)">Reol δ</button>
+      <button class="rtab" onclick="showReol('ᚠ',this)">ᚠ</button>
+    </div>
+    <p style="font-size:12px;color:#888;margin-bottom:10px">Klik på en flaske for detaljer</p>
+    <div style="overflow-x:auto"><div id="hylde-grid"></div></div>
+  </div>
+</div>
+
+<!-- LAGERLISTE -->
+<div id="tab-liste" class="panel">
+  <div class="card">
+    <input class="search-bar" type="text" placeholder="Søg efter vin, region, type, drikkeklar..." oninput="renderListe(this.value)">
+    <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+      <table class="list-table">
+        <colgroup><col style="width:34%"><col style="width:9%"><col style="width:8%"><col style="width:11%"><col style="width:13%"><col style="width:9%"><col style="width:8%"><col style="width:8%"></colgroup>
+        <thead><tr>
+          <th onclick="sortListe('etiket')" style="cursor:pointer">Etiket <span id="sort-etiket"></span></th>
+          <th onclick="sortListe('type')" style="cursor:pointer">Type <span id="sort-type"></span></th>
+          <th onclick="sortListe('aargang')" style="cursor:pointer">Årgang <span id="sort-aargang"></span></th>
+          <th onclick="sortListe('region')" style="cursor:pointer">Region <span id="sort-region"></span></th>
+          <th onclick="sortListe('drikkeklar')" style="cursor:pointer">Drikkeklar <span id="sort-drikkeklar"></span></th>
+          <th onclick="sortListe('pris')" style="cursor:pointer">Pris <span id="sort-pris"></span></th>
+          <th onclick="sortListe('antal')" style="text-align:center;cursor:pointer">Antal <span id="sort-antal"></span></th>
+          <th onclick="sortListe('koel')" style="text-align:center;cursor:pointer">❄ <span id="sort-koel"></span></th>
+        </tr></thead>
+        <tbody id="liste-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TILFØJ FLASKE -->
+<div id="tab-tilfoej" class="panel">
+  <div class="card">
+    <div class="foto-zone" onclick="document.getElementById('foto-input').click()">
+      <div style="font-size:32px">📷</div>
+      <p style="font-size:13px;color:#666;margin-top:6px">Tryk for at fotografere etiketten</p>
+      <p style="font-size:11px;color:#aaa;margin-top:3px">AI læser etiketten og udfylder felterne automatisk</p>
+    </div>
+    <input type="file" id="foto-input" accept="image/*" capture="environment" style="display:none" onchange="handleFoto(this)">
+    <div id="foto-preview-area" style="display:none;margin-bottom:12px">
+      <img id="foto-preview" class="foto-preview">
+      <div id="ai-scan-status"></div>
+      <div id="ai-result-display" style="display:none" class="ai-result-box"></div>
+    </div>
+
+    <div id="key-prompt-area" style="margin-bottom:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;display:none">
+      <div style="font-size:12px;font-weight:500;color:#92400e;margin-bottom:6px">Gemini API-nøgle påkrævet for foto og prisestimering</div>
+      <div style="display:flex;gap:6px">
+        <input id="key-input-tilfoej" type="password" placeholder="AIza..." style="flex:1;font-size:13px;padding:6px 10px;border:1px solid #ccc;border-radius:6px">
+        <button class="btn sm" onclick="saveApiKeyFromTilfoej()">Gem</button>
+      </div>
+    </div>
+
+    <div class="section-hdr">Vinoplysninger</div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Etiket (navn)</label><input id="f-etiket" type="text" placeholder="fx Château Margaux 2018"></div>
+      <div class="form-group"><label>Type</label><select id="f-type"><option>Rød</option><option>Hvid</option><option>Rosé</option><option>Bobler</option><option>Portvin</option><option>Spiritus</option></select></div>
+      <div class="form-group"><label>Årgang</label><input id="f-aargang" type="number" placeholder="fx 2019" min="1900" max="2030"></div>
+      <div class="form-group"><label>Region</label><input id="f-region" type="text" placeholder="fx Bordeaux"></div>
+      <div class="form-group"><label>Pris pr. flaske (kr.)</label><input id="f-pris" type="number" placeholder="0 = gave" min="0"></div>
+      <div class="form-group"><label>Drikkeklar-periode</label><input id="f-drikkeklar" type="text" placeholder="fx 2026–2034"></div>
+      <div class="form-group">
+        <label>Estimeret pris</label>
+        <div style="display:flex;align-items:center;gap:6px;min-height:36px">
+          <span id="f-prisestimat" style="font-size:13px;color:#888;flex:1">–</span>
+          <button class="btn sm" id="f-estimat-btn" onclick="hentPrisEstimatForm()" style="flex-shrink:0;white-space:nowrap">Hent</button>
+        </div>
+      </div>
+      <div class="form-group full"><label>Anskaffelse</label><input id="f-ansk" type="text" placeholder="fx Køb - 2026-03 - Supervin.dk"></div>
+      <div class="form-group full"><label>Bemærkninger</label><input id="f-bem" type="text" placeholder="Valgfri note"></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-hdr">Hyldepladser <span style="font-weight:400;color:#888;font-size:12px">— tilføj én linje per flaske</span></div>
+    <div id="slot-rows"></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn sm" onclick="addSlotRow()">+ Tilføj plads</button>
+      <button class="btn sm" onclick="addSixRows()">+ Tilføj 6 pladser</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn primary" onclick="tilfoejFlaske()">Gem flasker</button>
+      <span id="form-msg" style="font-size:12px;color:#666"></span>
+    </div>
+  </div>
+</div>
+
+<!-- OVERBLIK -->
+<div id="tab-overblik" class="panel active">
+  <div style="display:grid;grid-template-columns:140px 1fr;gap:12px;margin-bottom:12px;align-items:stretch" id="stat-top">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="stat-card" style="flex:1" id="stat-paalager"></div>
+      <div class="stat-card" style="flex:1" id="stat-paakoel"></div>
+    </div>
+    <div class="card" style="margin:0">
+      <div class="section-hdr" style="margin-top:0;margin-bottom:10px">Lagerværdi</div>
+      <div id="stat-lagervaerdi"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="section-hdr" style="margin-top:0">Snart udenfor drikkeklar-vindue</div>
+    <div id="stat-snart"></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="section-hdr" style="margin-top:0">Fordeling efter type</div>
+    <div id="stat-type"></div>
+    <div class="section-hdr" style="margin-top:14px">Fordeling efter region</div>
+    <div id="stat-region"></div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="section-hdr" style="margin-top:0">Drukket</div>
+    <div id="stat-drukket"></div>
+  </div>
+</div>
+
+<!-- HISTORIK -->
+<div id="tab-historik" class="panel">
+  <div class="card">
+    <p style="font-size:12px;color:#888;margin-bottom:12px">Vine der er drukket — hyldepladsen er frigivet men historikken bevares.</p>
+    <input class="search-bar" type="text" placeholder="Søg i historik..." oninput="renderHistorik(this.value)">
+    <div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+      <table class="list-table">
+        <colgroup><col style="width:32%"><col style="width:9%"><col style="width:8%"><col style="width:12%"><col style="width:10%"><col style="width:29%"></colgroup>
+        <thead><tr>
+          <th>Etiket</th><th>Type</th><th>Årgang</th><th>Region</th><th>Dato</th><th>Bemærkninger</th>
+        </tr></thead>
+        <tbody id="historik-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="modal-detail" onclick="handleModalBgClick(event)">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px">
+      <div style="flex:1"><h3 id="md-name"></h3><div class="modal-meta" id="md-meta"></div></div>
+      <button class="btn sm" onclick="closeDetailModal()" style="margin-left:8px">✕</button>
+    </div>
+
+    <div class="pris-box">
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Priser</div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end">
+        <div><div style="font-size:11px;color:#888">Anskaffelse</div><div style="font-size:16px;font-weight:600" id="md-pris-ansk">–</div></div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Estimeret nu</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div id="md-pris-estimat" style="font-size:13px;color:#666;min-height:20px"></div>
+            <button class="btn sm" id="md-pris-btn" onclick="hentPrisEstimat()">Hent estimat</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="form-group" style="flex:2;min-width:160px"><label class="info-lbl">Navn</label><input class="bem-edit" style="min-height:0;padding:5px 8px" id="md-edit-etiket" onchange="saveField('etiket',this.value)"></div>
+      <div class="form-group" style="flex:1;min-width:80px"><label class="info-lbl">Årgang</label><input class="bem-edit" style="min-height:0;padding:5px 8px" id="md-edit-aargang" type="number" min="1900" max="2030" onchange="saveField('aargang',this.value?parseInt(this.value):null)"></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="form-group" style="flex:1;min-width:120px"><label class="info-lbl">Type</label>
+        <select class="bem-edit" style="min-height:0;padding:5px 8px" id="md-edit-type" onchange="saveField('type',this.value)">
+          <option>Rød</option><option>Hvid</option><option>Rosé</option><option>Bobler</option><option>Portvin</option><option>Spiritus</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1;min-width:120px"><label class="info-lbl">Region</label><input class="bem-edit" style="min-height:0;padding:5px 8px" id="md-edit-region" onchange="saveField('region',this.value||null)"></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="form-group" style="flex:1;min-width:120px"><label class="info-lbl">Drikkeklar</label><input class="bem-edit" style="min-height:0;padding:5px 8px" id="md-edit-drikkeklar" placeholder="fx 2026–2034" onchange="saveField('drikkeklar',this.value)"></div>
+      <div class="form-group" style="flex:1;min-width:120px"><label class="info-lbl">Pris pr. flaske (kr.)</label><input class="bem-edit" style="min-height:0;padding:5px 8px" id="md-edit-pris" type="number" min="0" onchange="saveField('pris',this.value!==''?parseInt(this.value):null)"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px"><label class="info-lbl">Anskaffelse</label><input class="bem-edit" style="min-height:0;padding:5px 8px" id="md-edit-ansk" onchange="saveField('ansk',this.value)"></div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:4px">Ændringer gemmes automatisk</div>
+
+    <div class="divider"></div>
+    <div style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Hyldepladser — klik for handlinger</div>
+    <div id="md-slots" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px"></div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:14px">Klik på en plads: ❄ køl / 🍷 drukket</div>
+
+    <div class="divider"></div>
+    <div style="font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Bemærkninger</div>
+    <textarea class="bem-edit" id="md-bem" onchange="saveBem()" placeholder="Ingen bemærkninger endnu..."></textarea>
+    <div style="font-size:11px;color:#aaa;margin-top:3px">Ændringer gemmes automatisk</div>
+
+    <div class="divider"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn danger sm" onclick="markerDrukketAlle()">Drukket alle</button>
+      <button class="btn sm" onclick="closeDetailModal()">Luk</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbyGzMkHOC42YQwbVX5B1gblwXwTMXxoMyYroP-1-20TwC_pgPoaIksmfu8TooMoBaP7OA/exec';
+const GEMINI_URL='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+const GEMINI_URL_FALLBACK='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+const LS_KEY='vinkaelder_geminikey';
+const COLS=['A','B','C','D','E','F','G'];
+const ROWS=[1,2,3,4,5,6,7,8,9,10,11];
+const GRID_REOLS=['α','β','γ','δ'];
+const FEHU='ᚠ';
+
+let wines=[];
+let nextId=1;
+let currentReol='α';
+let detailGroup=null; // array af id'er for den åbne gruppe
+
+function getDetailWines(){return detailGroup?wines.filter(w=>detailGroup.includes(w.id)):[];}
+function getDetailGroupKey(){const g=getDetailWines();return g.length?groupKey(g[0]):null;}
+let geminiKey=localStorage.getItem(LS_KEY)||'';
+
+
+// ── Google Sheets sync ──────────────────────────────────────────────────
+function setSyncStatus(state, msg){
+  const dot=document.getElementById('sync-dot');
+  const txt=document.getElementById('sync-status');
+  dot.className='sync-dot '+(state==='ok'?'ok':state==='err'?'err':'loading');
+  txt.textContent=msg;
+}
+
+async function loadFromSheets(){
+  setSyncStatus('loading','Henter data fra Google Sheets...');
+  try{
+    const r=await fetch(SCRIPT_URL+'?t='+Date.now());
+    const d=await r.json();
+    const rows=d.rows;
+    if(!rows||rows.length<2){
+      wines=[];
+      nextId=1;
+      setSyncStatus('ok','Sheets er tom — tilføj din første flaske');
+      renderAll();
+      return;
+    }
+    const headers=rows[0];
+    const idx=h=>headers.indexOf(h);
+    const raw=rows.slice(1).filter(r=>r[idx('etiket')]).map((r,i)=>({
+      id:r[idx('id')]!==''?parseInt(r[idx('id')]):i,
+      etiket:r[idx('etiket')]||'',
+      aargang:r[idx('aargang')]?parseInt(r[idx('aargang')]):null,
+      region:r[idx('region')]||null,
+      type:r[idx('type')]||'Rød',
+      reol:r[idx('reol')]||'α',
+      kol:r[idx('kol')]||'A',
+      hylde:parseInt(r[idx('hylde')])||1,
+      pris:r[idx('pris')]!==''&&r[idx('pris')]!=null?parseFloat(r[idx('pris')]):null,
+      ansk:r[idx('ansk')]||'',
+      bem:r[idx('bem')]||'',
+      drikkeklar:r[idx('drikkeklar')]||'',
+      paakoel:r[idx('paakoel')]==='TRUE'||r[idx('paakoel')]===true,
+      prisestimat:r[idx('prisestimat')]||'',
+      drukket:r[idx('drukket')]==='TRUE'||r[idx('drukket')]===true,
+      drukketDato:cleanDato(r[idx('drukketDato')]),
+    })).map(w=>w.reol===FEHU?{...w,hylde:'',kol:''}:w);
+    // Deduplicate — ᚠ-flasker på id, grid-flasker på slot
+    const seen=new Map();
+    raw.forEach(w=>{
+      const key=w.reol===FEHU?`fehu-${w.id}`:slotKey(w.reol,w.kol,w.hylde);
+      seen.set(key,w);
+    });
+    wines=[...seen.values()].map(w=>({...w,id:w.id!==undefined?w.id:nextId++}));
+    nextId=Math.max(...wines.map(w=>w.id))+1;
+    setSyncStatus('ok','Synkroniseret — '+wines.length+' flasker');
+    renderAll();
+  }catch(e){
+    setSyncStatus('err','Fejl ved indlæsning — arbejder lokalt');
+    if(!wines.length){wines=[];nextId=1;}
+    renderAll();
+  }
+}
+
+function cleanDato(v){
+  if(!v)return '';
+  if(typeof v==='number'){
+    const d=new Date((v-25569)*86400*1000);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  const s=String(v).trim();
+  // Already correct format YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+  // ISO string from Sheets
+  if(s.includes('T')&&s.includes('Z')){
+    const d=new Date(s);
+    if(!isNaN(d))return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  return s;
+}
+
+function getDato(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+let saveInProgress=false;
+let savePending=false;
+
+async function saveToSheets(){
+  if(saveInProgress){savePending=true;return;}
+  saveInProgress=true;
+  setSyncStatus('loading','Gemmer...');
+  try{
+    const snapshot=JSON.stringify(wines);
+    await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'overwrite',rows:JSON.parse(snapshot)}),headers:{'Content-Type':'text/plain'}});
+    setSyncStatus('ok','Gemt — '+new Date().toLocaleTimeString('da-DK')+' ('+wines.length+' flasker)');
+  }catch(e){
+    setSyncStatus('err','Kunne ikke gemme til Google Sheets');
+  }
+  saveInProgress=false;
+  if(savePending){savePending=false;await saveToSheets();}
+}
+
+// Opdater kun specifikke rækker — mere effektivt end overwrite
+async function updateRows(updates){
+  setSyncStatus('loading','Gemmer...');
+  try{
+    await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'updateRows',updates}),headers:{'Content-Type':'text/plain'}});
+    setSyncStatus('ok','Gemt — '+new Date().toLocaleTimeString('da-DK'));
+  }catch(e){
+    setSyncStatus('err','Kunne ikke gemme til Google Sheets');
+  }
+}
+
+// Byg update-objekt for én flaske (individuelle felter)
+function makeIndividualUpdate(w, fields){
+  return {id:w.id, fields:fields.map(k=>({key:k,val:w[k]??''}))};
+}
+
+
+async function genskrivSheets(){
+  if(!confirm('Dette gensskriver alle rækker i Google Sheets med det aktuelle data inkl. id-kolonnen. Fortsæt?'))return;
+  await saveToSheets();
+}
+
+async function syncNow(){await loadFromSheets();}
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+function slotKey(r,k,h){return `${r}|${k}|${h}`;}
+function slotMap(){
+  const m={};
+  wines.filter(w=>!w.drukket&&w.reol!==FEHU).forEach(w=>{m[slotKey(w.reol,w.kol,w.hylde)]=w;});
+  return m;
+}
+function hyldeId(w){return w.reol===FEHU?FEHU:`${w.reol}-${w.hylde}-${w.kol}`;}
+function groupKey(w){return w.etiket+'||'+(w.aargang||'');}
+function groupWines(){
+  const g={};
+  const seen=new Set();
+  wines.filter(w=>!w.drukket).forEach(w=>{
+    if(w.reol===FEHU){
+      const k=groupKey(w);
+      if(!g[k])g[k]=[];
+      g[k].push(w);
+      return;
+    }
+    const sk=slotKey(w.reol,w.kol,w.hylde);
+    if(seen.has(sk))return;
+    seen.add(sk);
+    const k=groupKey(w);
+    if(!g[k])g[k]=[];
+    g[k].push(w);
+  });
+  return Object.values(g);
+}
+function shortName(n){const p=n.split(' ');return p.length<=4?n:p.slice(0,4).join(' ')+'…';}
+
+// ── Hyldeplan ────────────────────────────────────────────────────────────
+function renderHylde(){
+  const sm=slotMap(),grid=document.getElementById('hylde-grid');
+  grid.innerHTML='';
+
+  if(currentReol===FEHU){
+    // Fehu — simpel liste uden grid
+    grid.style.cssText='min-width:0';
+    const fehuWines=wines.filter(w=>!w.drukket&&w.reol===FEHU);
+    if(!fehuWines.length){
+      grid.innerHTML='<div style="font-size:13px;color:#aaa;padding:16px 0">Ingen flasker i ᚠ endnu</div>';
+      return;
+    }
+    fehuWines.forEach(w=>{
+      const d=document.createElement('div');
+      const tc=w.type.toLowerCase().replace('é','e').replace('ø','oe');
+      d.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;margin-bottom:4px;cursor:pointer;border:0.5px solid #e0d8d0';
+      d.innerHTML=`<span class="badge ${tc}">${w.type}</span><span style="font-size:13px;font-weight:500;flex:1">${w.etiket}${w.aargang?' ('+w.aargang+')':''}</span>${w.paakoel?'<span style="font-size:12px">❄</span>':''}`;
+      d.onclick=()=>openDetail(groupKey(w));
+      grid.appendChild(d);
+    });
+    return;
+  }
+
+  // Grid-reoler — hylde 11 øverst, hylde 1 nederst
+  const ROWS_REVERSED=[...ROWS].reverse();
+  grid.style.cssText='display:grid;grid-template-columns:48px repeat(7,1fr);gap:2px;min-width:500px';
+  grid.appendChild(document.createElement('div'));
+  COLS.forEach(c=>{const d=document.createElement('div');d.className='col-hdr';d.textContent=c;grid.appendChild(d);});
+  ROWS_REVERSED.forEach(r=>{
+    const lbl=document.createElement('div');lbl.className='row-lbl';lbl.textContent=r;grid.appendChild(lbl);
+    COLS.forEach(c=>{
+      const w=sm[slotKey(currentReol,c,r)];
+      const d=document.createElement('div');
+      if(w){
+        d.className='slot '+w.type.toLowerCase().replace('é','e').replace('ø','oe')+(w.paakoel?' on-koel':'');
+        d.textContent=shortName(w.etiket);
+        d.onclick=()=>openDetail(groupKey(w));
+      }else{d.className='slot empty';d.textContent='·';}
+      grid.appendChild(d);
+    });
+  });
+}
+
+function showReol(r,btn){currentReol=r;document.querySelectorAll('.rtab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderHylde();}
+
+// ── Detail modal ─────────────────────────────────────────────────────────
+async function openDetail(gk){
+  const group=wines.filter(w=>groupKey(w)===gk&&!w.drukket);
+  if(!group.length)return;
+  detailGroup=group.map(w=>w.id);
+  const f=group[0];
+  document.getElementById('md-name').textContent=f.etiket;
+  document.getElementById('md-meta').textContent=(f.aargang||'u/å')+' · '+f.type+(f.region?' · '+f.region:'');
+  document.getElementById('md-edit-etiket').value=f.etiket;
+  document.getElementById('md-edit-aargang').value=f.aargang||'';
+  document.getElementById('md-edit-region').value=f.region||'';
+  document.getElementById('md-edit-drikkeklar').value=f.drikkeklar||'';
+  document.getElementById('md-edit-pris').value=f.pris!=null?f.pris:'';
+  document.getElementById('md-edit-ansk').value=f.ansk||'';
+  document.getElementById('md-pris-ansk').textContent=f.pris!=null?f.pris+' kr.':'Gave';
+  const typeEl=document.getElementById('md-edit-type');
+  [...typeEl.options].forEach(o=>{o.selected=o.value===f.type;});
+  document.getElementById('md-bem').value=[...new Set(group.map(w=>w.bem).filter(Boolean))].join(' | ');
+  renderSlotPills(group);
+
+  // Vis cachet estimat hvis det findes, ellers vis tom
+  const el=document.getElementById('md-pris-estimat');
+  const btn=document.getElementById('md-pris-btn');
+  if(f.prisestimat){
+    el.innerHTML=`<div class="pris-estimat">${f.prisestimat}</div>`;
+    btn.textContent='Opdater estimat';
+  }else{
+    el.textContent='Intet estimat endnu';
+    btn.textContent='Hent estimat';
+  }
+
+  document.getElementById('modal-detail').classList.add('open');
+}
+
+async function hentPrisEstimat(){
+  const group=getDetailWines();
+  if(!group.length)return;
+  const w=group[0];
+  const el=document.getElementById('md-pris-estimat');
+  const btn=document.getElementById('md-pris-btn');
+
+  if(!geminiKey){
+    el.innerHTML='<span style="font-size:12px;color:#888">Angiv Gemini API-nøgle</span><br><input id="apikey-input" type="password" placeholder="AIza..." style="margin-top:6px;font-size:12px;padding:5px 8px;border:1px solid #ccc;border-radius:5px;width:100%"><button onclick="saveApiKey()" style="margin-top:5px;font-size:11px;padding:3px 8px;border:1px solid #ccc;border-radius:4px;cursor:pointer;background:#fff">Gem nøgle</button>';
+    return;
+  }
+
+  btn.disabled=true;
+  el.innerHTML='<span class="spinner"></span>henter estimat...';
+
+  try{
+    const prompt=`Du er vinekspert. For vinen "${w.etiket}"${w.aargang?', årgang '+w.aargang:''}${w.region?', '+w.region:''}: 1) Giv et estimat af aktuel markedspris i DKK på formen "XXX–YYY kr." 2) Giv drikkeklar-periode på formen "ÅÅÅÅ–ÅÅÅÅ". Svar KUN med to linjer: første linje er prisen, anden linje er drikkeklar-perioden.`;
+    const d=await geminiCall({contents:[{parts:[{text:prompt}]}]});
+    if(d.error){el.innerHTML=`<span style="font-size:12px;color:#a32d2d">API-fejl: ${d.error.message}</span>`;btn.disabled=false;return;}
+    const txt=d.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    const lines=txt.trim().split('\n').filter(Boolean);
+    const prisestimat=lines[0]||'–';
+    const drikkeklar=lines[1]||'';
+
+    // Gem estimat på alle flasker i gruppen
+    group.forEach(x=>{x.prisestimat=prisestimat;});
+    el.innerHTML=`<div class="pris-estimat">${prisestimat}</div>`;
+    if(drikkeklar){
+      el.innerHTML+=`<div class="pris-note" style="margin-top:4px;font-size:11px;color:#888">Drikkeklar estimat: ${drikkeklar}</div>`;
+    }
+    btn.textContent='Opdater estimat';
+    await updateRows(getDetailWines().map(w=>makeIndividualUpdate(w,['prisestimat'])));
+  }catch(e){
+    el.innerHTML=`<span style="font-size:12px;color:#a32d2d">Fejl: ${e.message}</span>`;
+  }
+  btn.disabled=false;
+}
+
+async function geminiCall(body){
+  const r1=await fetch(GEMINI_URL+'?key='+geminiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d1=await r1.json();
+  if(d1.error&&d1.error.message&&d1.error.message.includes('high demand')){
+    // Fallback til lite-model
+    const r2=await fetch(GEMINI_URL_FALLBACK+'?key='+geminiKey,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    return await r2.json();
+  }
+  return d1;
+}
+
+function saveApiKey(){
+  const val=document.getElementById('apikey-input')?.value?.trim();
+  if(val){geminiKey=val;localStorage.setItem(LS_KEY,val);openDetail(getDetailGroupKey());}
+}
+
+function renderSlotPills(group){
+  // Show ALL bottles in group incl. drukket ones (greyed out)
+  const allInGroup=getDetailWines();
+  document.getElementById('md-slots').innerHTML=allInGroup.map(w=>{
+    if(w.drukket){
+      return `<span class="slot-pill drukket" title="Drukket ${w.drukketDato||''}">${hyldeId(w)}</span>`;
+    }
+    return `<span class="slot-pill${w.paakoel?' on-koel':''}" onclick="showPillMenu(event,${w.id})">${hyldeId(w)}</span>`;
+  }).join('');
+}
+
+let pillMenuId=null;
+function showPillMenu(e,id){
+  e.stopPropagation();
+  closePillMenu();
+  const w=wines.find(x=>x.id===id);if(!w)return;
+  pillMenuId=id;
+  const menu=document.createElement('div');
+  menu.className='pill-menu';
+  menu.id='pill-menu';
+  menu.innerHTML=`
+    <button class="pill-menu-item" onclick="pillToggleKoel(${id})">${w.paakoel?'❄ Fjern fra køl':'❄ Sæt på køl'}</button>
+    <button class="pill-menu-item" onclick="showPillFlyt(${id})">📦 Flyt til anden lokation</button>
+    <button class="pill-menu-item danger" onclick="pillMarkerDrukket(${id})">🍷 Drukket</button>`;
+  menu.style.left=Math.min(e.clientX, window.innerWidth-200)+'px';
+  menu.style.top=Math.min(e.clientY+6, window.innerHeight-120)+'px';
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('click',closePillMenu,{once:true}),10);
+}
+
+function showPillFlyt(id){
+  // Fjern den gamle menu uden at trigge click-outside
+  const old=document.getElementById('pill-menu');
+  if(old)old.remove();
+  document.removeEventListener('click',closePillMenu);
+
+  const w=wines.find(x=>x.id===id);if(!w)return;
+  const reolOpts=[...GRID_REOLS,FEHU].map(r=>`<option value="${r}">${r===FEHU?'ᚠ (ingen fast plads)':'Reol '+r}</option>`).join('');
+  const hyldeOpts=ROWS.map(r=>`<option>${r}</option>`).join('');
+  const kolOpts=COLS.map(c=>`<option>${c}</option>`).join('');
+
+  const menu=document.createElement('div');
+  menu.className='pill-menu';
+  menu.id='pill-menu';
+  menu.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);min-width:220px;z-index:200;padding:12px';
+  menu.innerHTML=`
+    <div style="font-size:12px;font-weight:500;margin-bottom:10px">Flyt ${hyldeId(w)}</div>
+    <div class="form-group" style="margin-bottom:8px"><label style="font-size:11px;color:#888">Ny reol</label>
+      <select id="flyt-reol" onchange="toggleFlytFields()" style="width:100%;font-size:13px;padding:5px">${reolOpts}</select></div>
+    <div id="flyt-grid-fields">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <div class="form-group"><label style="font-size:11px;color:#888">Hylde</label>
+          <select id="flyt-hylde" style="width:100%;font-size:13px;padding:5px">${hyldeOpts}</select></div>
+        <div class="form-group"><label style="font-size:11px;color:#888">Kolonne</label>
+          <select id="flyt-kol" style="width:100%;font-size:13px;padding:5px">${kolOpts}</select></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn primary sm" style="flex:1" onclick="bekraeftFlyt(${id})">Flyt</button>
+      <button class="btn sm" onclick="closePillMenu()">Annuller</button>
+    </div>`;
+  document.body.appendChild(menu);
+}
+
+function toggleFlytFields(){
+  const reol=document.getElementById('flyt-reol')?.value;
+  const fields=document.getElementById('flyt-grid-fields');
+  if(fields)fields.style.display=(reol===FEHU)?'none':'';
+}
+
+function bekraeftFlyt(id){
+  const w=wines.find(x=>x.id===id);if(!w)return;
+  const nyReol=document.getElementById('flyt-reol').value;
+  const isFehu=nyReol===FEHU;
+  const nyHylde=isFehu?id:parseInt(document.getElementById('flyt-hylde').value);
+  const nyKol=isFehu?'':document.getElementById('flyt-kol').value;
+
+  // Check om pladsen er optaget
+  if(!isFehu){
+    const sm=slotMap();
+    const key=slotKey(nyReol,nyKol,nyHylde);
+    if(sm[key]&&sm[key].id!==id){
+      alert(`Pladsen ${nyReol}-${nyHylde}-${nyKol} er allerede optaget.`);return;
+    }
+  }
+  w.reol=nyReol;w.hylde=nyHylde;w.kol=nyKol;
+  closePillMenu();
+  renderSlotPills(getDetailWines());
+  renderAll();
+  updateRows([makeIndividualUpdate(w,['reol','hylde','kol'])]);
+}
+
+function closePillMenu(){
+  const m=document.getElementById('pill-menu');
+  if(m)m.remove();
+  pillMenuId=null;
+}
+
+function pillToggleKoel(id){
+  const w=wines.find(x=>x.id===id);if(!w)return;
+  w.paakoel=!w.paakoel;
+  renderSlotPills(getDetailWines());
+  renderHylde();
+  updateRows([makeIndividualUpdate(w,['paakoel'])]);
+}
+
+function pillMarkerDrukket(id){
+  const w=wines.find(x=>x.id===id);if(!w)return;
+  w.drukket=true;w.drukketDato=getDato();w.paakoel=false;
+  renderSlotPills(getDetailWines());
+  renderAll();
+  updateRows([makeIndividualUpdate(w,['drukket','drukketDato','paakoel'])]);
+}
+
+let pendingFieldSave=false;
+
+function saveBem(){
+  const val=document.getElementById('md-bem').value;
+  getDetailWines().forEach(w=>w.bem=val);
+  pendingFieldSave=true;
+}
+
+function saveField(field, val){
+  getDetailWines().forEach(w=>{w[field]=val;});
+  const f=getDetailWines()[0];
+  if(f){
+    document.getElementById('md-name').textContent=f.etiket;
+    document.getElementById('md-meta').textContent=(f.aargang||'u/å')+' · '+f.type+(f.region?' · '+f.region:'');
+    if(field==='pris') document.getElementById('md-pris-ansk').textContent=f.pris!=null?f.pris+' kr.':'Gave';
+  }
+  pendingFieldSave=true;
+  renderAll();
+}
+
+function openDetailDrukket(id){
+  const w=wines.find(x=>x.id===id);if(!w)return;
+  detailGroup=[w.id];
+  // Reuse existing modal but populate with drukket wine data
+  document.getElementById('md-name').textContent=w.etiket;
+  document.getElementById('md-meta').textContent=(w.aargang||'u/å')+' · '+w.type+(w.region?' · '+w.region:'');
+  document.getElementById('md-edit-etiket').value=w.etiket;
+  document.getElementById('md-edit-aargang').value=w.aargang||'';
+  document.getElementById('md-edit-region').value=w.region||'';
+  document.getElementById('md-edit-drikkeklar').value=w.drikkeklar||'';
+  document.getElementById('md-edit-pris').value=w.pris!=null?w.pris:'';
+  document.getElementById('md-edit-ansk').value=w.ansk||'';
+  document.getElementById('md-pris-ansk').textContent=w.pris!=null?w.pris+' kr.':'Gave';
+  const typeEl=document.getElementById('md-edit-type');
+  [...typeEl.options].forEach(o=>{o.selected=o.value===w.type;});
+  document.getElementById('md-bem').value=w.bem||'';
+  const el=document.getElementById('md-pris-estimat');
+  const btn=document.getElementById('md-pris-btn');
+  if(w.prisestimat){el.innerHTML=`<div class="pris-estimat">${w.prisestimat}</div>`;btn.textContent='Opdater estimat';}
+  else{el.textContent='Intet estimat';btn.textContent='Hent estimat';}
+  // Show drukket info instead of hylde pills
+  document.getElementById('md-slots').innerHTML=`<span style="font-size:12px;color:#888">Drukket ${w.drukketDato||''} — tidl. plads: ${hyldeId(w)}</span>
+    <button class="btn sm" style="margin-left:8px" onclick="fortrydDrukket(${w.id})">Fortryd — sæt tilbage på lager</button>`;
+  document.getElementById('modal-detail').classList.add('open');
+}
+
+function fortrydDrukket(id){
+  const w=wines.find(x=>x.id===id);if(!w)return;
+  w.drukket=false;w.drukketDato='';
+  closeDetailModal();
+  updateRows([makeIndividualUpdate(w,['drukket','drukketDato'])]);
+  renderAll();
+}
+
+function markerDrukket(antal){
+  const g=getDetailWines().filter(w=>!w.drukket);
+  if(!g.length)return;
+  const dato=getDato();
+  g.slice(0,antal).forEach(w=>{w.drukket=true;w.drukketDato=dato;w.paakoel=false;});
+  closeDetailModal();
+  updateRows(g.slice(0,antal).map(w=>makeIndividualUpdate(w,['drukket','drukketDato','paakoel'])));
+  renderAll();
+}
+
+function markerDrukketAlle(){
+  const g=getDetailWines().filter(w=>!w.drukket);
+  if(!g.length)return;
+  const dato=getDato();
+  g.forEach(w=>{w.drukket=true;w.drukketDato=dato;w.paakoel=false;});
+  closeDetailModal();
+  updateRows(g.map(w=>makeIndividualUpdate(w,['drukket','drukketDato','paakoel'])));
+  renderAll();
+}
+
+function handleModalBgClick(e){if(e.target===document.getElementById('modal-detail'))closeDetailModal();}
+
+function closeDetailModal(){
+  document.getElementById('modal-detail').classList.remove('open');
+  if(pendingFieldSave&&detailGroup){
+    pendingFieldSave=false;
+    const updates=getDetailWines().map(w=>makeIndividualUpdate(w,['etiket','aargang','region','type','drikkeklar','pris','ansk','bem','prisestimat']));
+    updateRows(updates);
+  }
+  detailGroup=null;
+}
+
+// ── Lagerliste ───────────────────────────────────────────────────────────
+let sortCol=null, sortDir=1;
+
+function sortListe(col){
+  if(sortCol===col){sortDir*=-1;}else{sortCol=col;sortDir=1;}
+  document.querySelectorAll('[id^="sort-"]').forEach(el=>el.textContent='');
+  const el=document.getElementById('sort-'+col);
+  if(el)el.textContent=sortDir===1?' ↑':' ↓';
+  renderListe(document.querySelector('.search-bar')?.value||'');
+}
+
+function renderListe(q=''){
+  const q2=(q||'').toLowerCase();
+  const body=document.getElementById('liste-body');
+  let filtered=groupWines().filter(g=>{const f=g[0];return !q2||[f.etiket,f.region||'',f.type,f.drikkeklar||'',String(f.aargang||'')].some(s=>s.toLowerCase().includes(q2));});
+  if(sortCol){
+    filtered.sort((a,b)=>{
+      let av,bv;
+      if(sortCol==='antal'){av=a.length;bv=b.length;}
+      else if(sortCol==='aargang'){av=a[0].aargang||0;bv=b[0].aargang||0;}
+      else if(sortCol==='pris'){av=a[0].pris!=null?a[0].pris:-1;bv=b[0].pris!=null?b[0].pris:-1;}
+      else if(sortCol==='koel'){av=a.filter(w=>w.paakoel).length>0?0:1;bv=b.filter(w=>w.paakoel).length>0?0:1;}
+      else{av=(a[0][sortCol]||'').toLowerCase();bv=(b[0][sortCol]||'').toLowerCase();}
+      return av<bv?-sortDir:av>bv?sortDir:0;
+    });
+  }
+  body.innerHTML=filtered.map(g=>{
+    const f=g[0],tc=f.type.toLowerCase().replace('é','e').replace('ø','oe');
+    const koelCount=g.filter(w=>w.paakoel).length;
+    const gk=groupKey(f).replace(/'/g,"\\'");
+    return `<tr onclick="openDetail('${gk}')">
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span style="font-weight:500">${f.etiket}</span></td>
+      <td><span class="badge ${tc}">${f.type}</span></td>
+      <td>${f.aargang||'–'}</td>
+      <td>${f.region||'–'}</td>
+      <td style="font-size:11px;color:#888">${f.drikkeklar||'–'}</td>
+      <td style="text-align:right">${f.pris!=null?f.pris+' kr.':'gave'}</td>
+      <td style="text-align:center"><span class="antal-badge">${g.length}</span></td>
+      <td style="text-align:center">${koelCount?`<span class="koel-badge">❄ ${koelCount}</span>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Foto / AI ────────────────────────────────────────────────────────────
+function saveApiKeyFromTilfoej(){
+  const val=document.getElementById('key-input-tilfoej')?.value?.trim();
+  if(val){geminiKey=val;localStorage.setItem(LS_KEY,val);document.getElementById('key-prompt-area').style.display='none';}
+}
+
+async function hentPrisEstimatForm(){
+  const etiket=document.getElementById('f-etiket').value.trim();
+  if(!etiket){document.getElementById('f-prisestimat').textContent='Angiv først et navn';return;}
+  const aargang=document.getElementById('f-aargang').value;
+  const region=document.getElementById('f-region').value.trim();
+  const el=document.getElementById('f-prisestimat');
+  const btn=document.getElementById('f-estimat-btn');
+  if(!geminiKey){
+    document.getElementById('key-prompt-area').style.display='block';
+    return;
+  }
+  btn.disabled=true;
+  el.innerHTML='<span class="spinner"></span>';
+  try{
+    const prompt=`Du er vinekspert. For vinen "${etiket}"${aargang?', årgang '+aargang:''}${region?', '+region:''}: 1) Giv et estimat af aktuel markedspris i DKK på formen "XXX–YYY kr." 2) Giv drikkeklar-periode på formen "ÅÅÅÅ–ÅÅÅÅ". Svar KUN med to linjer: første linje er prisen, anden linje er drikkeklar-perioden.`;
+    const d=await geminiCall({contents:[{parts:[{text:prompt}]}]});
+    if(d.error){el.textContent='Fejl: '+d.error.message;btn.disabled=false;return;}
+    const txt=d.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    const lines=txt.trim().split('\n').filter(Boolean);
+    const pris=lines[0]||'–';
+    const drikkeklar=lines[1]||'';
+    el.innerHTML=`<span style="font-weight:600;color:#1a6b2e">${pris}</span>${drikkeklar?`<span style="font-size:11px;color:#888;display:block">Drikkeklar: ${drikkeklar}</span>`:''}`;
+    // Udfyld drikkeklar-feltet hvis det er tomt
+    if(drikkeklar&&!document.getElementById('f-drikkeklar').value){
+      document.getElementById('f-drikkeklar').value=drikkeklar;
+    }
+    // Gem estimat til brug ved tilføjelse
+    document.getElementById('f-estimat-btn').dataset.estimat=pris;
+  }catch(e){
+    el.textContent='Fejl: '+e.message;
+  }
+  btn.disabled=false;
+}
+
+async function handleFoto(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const b64=e.target.result.split(',')[1];
+    document.getElementById('foto-preview').src=e.target.result;
+    document.getElementById('foto-preview-area').style.display='block';
+    document.getElementById('ai-result-display').style.display='none';
+    const status=document.getElementById('ai-scan-status');
+    if(!geminiKey){
+      document.getElementById('key-prompt-area').style.display='block';
+      status.innerHTML='<span style="font-size:12px;color:#92400e">Angiv API-nøgle ovenfor for at scanne etiketten</span>';
+      return;
+    }
+    status.innerHTML='<span class="spinner"></span> Læser etiket...';
+    try{
+      const mimeType=file.type||'image/jpeg';
+      const body={contents:[{parts:[
+        {inline_data:{mime_type:mimeType,data:b64}},
+        {text:'Dette er et foto af en vinlabel. Svar KUN med et JSON-objekt og intet andet — ingen forklaring, ingen markdown-tags: {"etiket":"","aargang":null,"region":"","type":"Rød","drikkeklar":""}. Regler: type skal være præcis én af Rød/Hvid/Rosé/Bobler/Portvin/Spiritus. aargang skal være et heltal eller null. drikkeklar skal være et årsinterval på formen "ÅÅÅÅ–ÅÅÅÅ" baseret på vintype, appellation og årgang — giv altid et kvalificeret estimat, fx "2025–2032", aldrig tom streng medmindre vinen er helt uidentificerbar.'}
+      ]}]};
+      const d=await geminiCall(body);
+      if(d.error){
+        status.innerHTML=`<span style="font-size:12px;color:#a32d2d">API-fejl: ${d.error.message}</span>`;
+        return;
+      }
+      const txt=(d.candidates?.[0]?.content?.parts?.[0]?.text||'{}').replace(/```json|```/g,'').trim();
+      let parsed={};
+      try{parsed=JSON.parse(txt);}catch(pe){
+        status.innerHTML=`<span style="font-size:12px;color:#a32d2d">Kunne ikke tolke svar: ${txt.slice(0,80)}</span>`;
+        return;
+      }
+      status.innerHTML='';
+      const rd=document.getElementById('ai-result-display');
+      rd.style.display='block';
+      rd.innerHTML=`✓ AI fandt: <strong>${parsed.etiket||'?'}</strong>${parsed.aargang?' '+parsed.aargang:''}, ${parsed.type||'?'}, ${parsed.region||'?'}${parsed.drikkeklar?', drikkeklar: '+parsed.drikkeklar:''}`;
+      if(parsed.etiket)document.getElementById('f-etiket').value=parsed.etiket;
+      if(parsed.aargang)document.getElementById('f-aargang').value=parsed.aargang;
+      if(parsed.region)document.getElementById('f-region').value=parsed.region;
+      if(parsed.drikkeklar)document.getElementById('f-drikkeklar').value=parsed.drikkeklar;
+      if(parsed.type){const sel=document.getElementById('f-type');[...sel.options].forEach(o=>{if(o.value===parsed.type)o.selected=true;});}
+    }catch(err){
+      document.getElementById('ai-scan-status').innerHTML=`<span style="font-size:12px;color:#a32d2d">Fejl: ${err.message}</span>`;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Tilføj flaske ─────────────────────────────────────────────────────────
+let slotRowCount=0;
+function addSlotRow(reol,kol,hylde){
+  slotRowCount++;
+  const id='sr'+slotRowCount;
+  const reolOpts=[...GRID_REOLS,FEHU].map(r=>`<option${reol===r?' selected':''}>${r}</option>`).join('');
+  const hyldeOpts=ROWS.map(r=>`<option${hylde===r?' selected':''}>${r}</option>`).join('');
+  const kolOpts=COLS.map(c=>`<option${kol===c?' selected':''}>${c}</option>`).join('');
+  const isFehu=reol===FEHU;
+  const div=document.createElement('div');div.id=id;div.className='slot-row';
+  div.innerHTML=`
+    <div class="form-group"><label>Reol</label><select class="sr-reol" onchange="handleReolChange(this,'${id}')">${reolOpts}</select></div>
+    <div class="form-group sr-hylde-group"${isFehu?' style="display:none"':''}><label>Hylde</label><select class="sr-hylde">${hyldeOpts}</select></div>
+    <div class="form-group sr-kol-group"${isFehu?' style="display:none"':''}><label>Kolonne</label><select class="sr-kol">${kolOpts}</select></div>
+    <button class="remove-slot-btn" onclick="document.getElementById('${id}').remove()">×</button>`;
+  document.getElementById('slot-rows').appendChild(div);
+}
+
+function handleReolChange(sel,rowId){
+  const row=document.getElementById(rowId);
+  const isFehu=sel.value===FEHU;
+  row.querySelector('.sr-hylde-group').style.display=isFehu?'none':'';
+  row.querySelector('.sr-kol-group').style.display=isFehu?'none':'';
+}
+
+function addSixRows(){for(let i=0;i<6;i++)addSlotRow('α','A',1);}
+function initSlotRows(){document.getElementById('slot-rows').innerHTML='';slotRowCount=0;addSlotRow('α','A',1);}
+
+function tilfoejFlaske(){
+  const etiket=document.getElementById('f-etiket').value.trim();
+  if(!etiket){document.getElementById('form-msg').textContent='Angiv venligst et navn.';return;}
+  const rows=document.querySelectorAll('#slot-rows .slot-row');
+  if(!rows.length){document.getElementById('form-msg').textContent='Tilføj mindst én hyldeplads.';return;}
+  const sm=slotMap();
+  const errors=[];
+  rows.forEach(row=>{
+    const r=row.querySelector('.sr-reol').value;
+    if(r===FEHU)return; // ᚠ har ingen kollisions-check
+    const h=parseInt(row.querySelector('.sr-hylde').value),k=row.querySelector('.sr-kol').value;
+    if(sm[slotKey(r,k,h)])errors.push(`${r}-${h}-${k}`);
+  });
+  if(errors.length){document.getElementById('form-msg').textContent='Optaget: '+errors.join(', ');return;}
+  const aargang=document.getElementById('f-aargang').value?parseInt(document.getElementById('f-aargang').value):null;
+  const pris=document.getElementById('f-pris').value!==''?parseInt(document.getElementById('f-pris').value):null;
+  rows.forEach(row=>{
+    const r=row.querySelector('.sr-reol').value;
+    const isFehu=r===FEHU;
+    const k=isFehu?'':row.querySelector('.sr-kol').value;
+    const h=isFehu?'':parseInt(row.querySelector('.sr-hylde').value);
+    wines.push({id:nextId++,etiket,aargang,region:document.getElementById('f-region').value.trim()||null,
+      type:document.getElementById('f-type').value,reol:r,kol:k,hylde:h,
+      pris,ansk:document.getElementById('f-ansk').value.trim(),bem:document.getElementById('f-bem').value.trim(),
+      drikkeklar:document.getElementById('f-drikkeklar').value.trim(),
+      prisestimat:document.getElementById('f-estimat-btn').dataset.estimat||'',
+      paakoel:false});
+  });
+  document.getElementById('form-msg').textContent=`${rows.length} flaske${rows.length>1?'r':''} tilføjet.`;
+  ['f-etiket','f-aargang','f-region','f-pris','f-drikkeklar','f-ansk','f-bem'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-prisestimat').textContent='–';
+  document.getElementById('f-estimat-btn').dataset.estimat='';
+  document.getElementById('foto-preview-area').style.display='none';
+  document.getElementById('foto-input').value='';
+  initSlotRows();saveToSheets();renderAll();
+}
+
+// ── Overblik ─────────────────────────────────────────────────────────────
+function renderOverblik(){
+  const aktive=wines.filter(w=>!w.drukket);
+  const total=aktive.length;
+  const paakoel=aktive.filter(w=>w.paakoel).length;
+
+  const erGave=w=>!w.pris||(w.ansk||'').toLowerCase().includes('gave');
+  const antalGave=aktive.filter(erGave).length;
+  const antalKoeb=aktive.filter(w=>!erGave(w)).length;
+  const totalKoeb=aktive.filter(w=>!erGave(w)).reduce((s,w)=>s+(w.pris||0),0);
+  const totalIndkoeb=aktive.reduce((s,w)=>s+(w.pris||0),0);
+
+  // Estimeret værdi — brug midtpunkt af estimat hvis sat, ellers indkøbspris som fallback
+  const totalEstimat=aktive.reduce((s,w)=>{
+    if(w.prisestimat){
+      const m=w.prisestimat.match(/(\d+)[–\-](\d+)/);
+      if(m)return s+Math.round((parseInt(m[1])+parseInt(m[2]))/2);
+    }
+    return s+(w.pris||0);
+  },0);
+  const estimatDaekning=aktive.filter(w=>w.prisestimat).length;
+
+  document.getElementById('stat-cards') && (document.getElementById('stat-cards').innerHTML='');
+  document.getElementById('stat-paalager').innerHTML=`<div class="stat-val">${total}</div><div class="stat-lbl">flasker på lager</div>`;
+  document.getElementById('stat-paakoel').innerHTML=`<div class="stat-val" style="color:#1565c0">❄ ${paakoel}</div><div class="stat-lbl">på køl nu</div>`;
+
+  // Lagerværdi
+  const estimatKoeb=aktive.filter(w=>!erGave(w)).reduce((s,w)=>{
+    if(w.prisestimat){const m=w.prisestimat.match(/(\d+)[–\-](\d+)/);if(m)return s+Math.round((parseInt(m[1])+parseInt(m[2]))/2);}
+    return s+(w.pris||0);
+  },0);
+  const estimatGave=aktive.filter(erGave).reduce((s,w)=>{
+    if(w.prisestimat){const m=w.prisestimat.match(/(\d+)[–\-](\d+)/);if(m)return s+Math.round((parseInt(m[1])+parseInt(m[2]))/2);}
+    return s+(w.pris||0);
+  },0);
+
+  document.getElementById('stat-lagervaerdi').innerHTML=`
+    <div style="display:flex;gap:0;align-items:stretch">
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;padding-right:20px">
+        <div style="font-size:11px;color:#aaa">Købt (${antalKoeb} fl.)</div>
+        <div style="font-size:11px;color:#aaa">Estimeret nutidsværdi</div>
+        <div style="font-size:18px;font-weight:600;margin-bottom:10px">${totalKoeb.toLocaleString('da-DK')} kr.</div>
+        <div style="font-size:18px;font-weight:600;color:#1a6b2e;margin-bottom:10px">${estimatKoeb.toLocaleString('da-DK')} kr.</div>
+        <div style="font-size:11px;color:#aaa">Gaver (${antalGave} fl.)</div>
+        <div style="font-size:11px;color:#aaa">Estimeret nutidsværdi</div>
+        <div style="font-size:18px;font-weight:600">${antalGave} fl.</div>
+        <div style="font-size:18px;font-weight:600;color:#1a6b2e">${estimatGave.toLocaleString('da-DK')} kr.</div>
+      </div>
+      <div style="border-left:0.5px solid #e0d8d0;padding-left:20px;display:flex;flex-direction:column;justify-content:center;min-width:180px">
+        <div style="font-size:11px;color:#888;font-weight:500;margin-bottom:8px">Samlet estimeret lagerværdi</div>
+        <div style="font-size:26px;font-weight:600;color:#1a6b2e;margin-bottom:6px">${totalEstimat.toLocaleString('da-DK')} kr.</div>
+        <div style="font-size:11px;font-weight:500;color:${totalEstimat>=totalIndkoeb?'#1a6b2e':'#a32d2d'}">${totalIndkoeb>0?((totalEstimat-totalIndkoeb)/totalIndkoeb*100).toFixed(0)+'% ift. indkøbspris':'–'}</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#aaa;margin-top:10px;border-top:0.5px solid #e0d8d0;padding-top:8px">${estimatDaekning} af ${total} flasker har prisestimater — resten benytter indkøbspris som grundlag</div>`;
+
+  document.getElementById('stat-samlet') && (document.getElementById('stat-samlet').innerHTML='');
+
+  // Snart udenfor vindue
+  const aarNu=new Date().getFullYear();
+  const snart=aktive.filter(w=>{
+    if(!w.drikkeklar)return false;
+    const m=w.drikkeklar.match(/\d{4}[–\-](\d{4})/);
+    if(!m)return false;
+    const slut=parseInt(m[1]);
+    return slut>=aarNu && slut<=aarNu+2;
+  });
+  const snartGrupper={};
+  snart.forEach(w=>{const k=groupKey(w);if(!snartGrupper[k])snartGrupper[k]=[];snartGrupper[k].push(w);});
+  const snartEl=document.getElementById('stat-snart');
+  if(!Object.keys(snartGrupper).length){
+    snartEl.innerHTML='<div style="font-size:12px;color:#888">Ingen vine udløber inden for de næste 2 år.</div>';
+  }else{
+    snartEl.innerHTML=Object.entries(snartGrupper).sort((a,b)=>{
+      const getSlut=g=>{const m=g[1][0].drikkeklar.match(/\d{4}[–\-](\d{4})/);return m?parseInt(m[1]):9999;};
+      return getSlut(a)-getSlut(b);
+    }).map(([k,g])=>{
+      const f=g[0];
+      const m=f.drikkeklar.match(/\d{4}[–\-](\d{4})/);
+      const slut=m?parseInt(m[1]):0;
+      const udloebet=slut<aarNu;
+      const label=udloebet?'Udløbet':slut===aarNu?'Udløber i år':'Udløber '+slut;
+      const bg=udloebet?'#fcebeb':'#fef9e7';
+      const fg=udloebet?'#a32d2d':'#b45309';
+      return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;cursor:pointer" onclick="openDetail('${k.replace(/'/g,"\\'")}')">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500">${f.etiket}${f.aargang?' ('+f.aargang+')':''}</div>
+          <div style="font-size:11px;color:#888">Drikkeklar: ${f.drikkeklar} · ${g.length} fl. tilbage</div>
+        </div>
+        <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px;background:${bg};color:${fg}">${label}</span>
+      </div>`;
+    }).join('');
+  }
+
+  const drukket=wines.filter(w=>w.drukket);
+  const drukketAntal=drukket.length;
+  const byTypeDrukket={};drukket.forEach(w=>{byTypeDrukket[w.type]=(byTypeDrukket[w.type]||0)+1;});
+  const drukketTotal=drukketAntal||1;
+  document.getElementById('stat-drukket').innerHTML=`
+    <div style="display:flex;gap:32px;align-items:center;flex-wrap:wrap">
+      <div style="text-align:center">
+        <div style="font-size:28px;font-weight:600">${drukketAntal}</div>
+        <div style="font-size:12px;color:#888">flasker drukket</div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        ${drukketAntal===0?'<div style="font-size:12px;color:#aaa">Ingen vine drukket endnu.</div>':
+          Object.entries(byTypeDrukket).sort((a,b)=>b[1]-a[1]).map(([t,n])=>{
+            const tc=t.toLowerCase().replace('é','e').replace('ø','oe'),pct=Math.round(n/drukketTotal*100);
+            return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="badge ${tc}" style="width:52px;text-align:center">${t}</span><div style="flex:1;height:8px;border-radius:4px;background:#f0ede8"><div style="width:${pct}%;height:100%;border-radius:4px;background:#8B1A1A"></div></div><span style="font-size:12px;color:#888;min-width:60px">${n} fl. (${pct}%)</span></div>`;
+          }).join('')}
+      </div>
+    </div>`;
+
+  const byType={};aktive.forEach(w=>{byType[w.type]=(byType[w.type]||0)+1;});
+  document.getElementById('stat-type').innerHTML=Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t,n])=>{
+    const tc=t.toLowerCase().replace('é','e').replace('ø','oe'),pct=total?Math.round(n/total*100):0;
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="badge ${tc}" style="width:52px;text-align:center">${t}</span><div style="flex:1;height:8px;border-radius:4px;background:#f0ede8"><div style="width:${pct}%;height:100%;border-radius:4px;background:#8B1A1A"></div></div><span style="font-size:12px;color:#888;min-width:60px">${n} fl. (${pct}%)</span></div>`;
+  }).join('');
+  const byReg={};aktive.forEach(w=>{byReg[w.region||'Ukendt']=(byReg[w.region||'Ukendt']||0)+1;});
+  document.getElementById('stat-region').innerHTML=Object.entries(byReg).sort((a,b)=>b[1]-a[1]).map(([r,n])=>{
+    const pct=total?Math.round(n/total*100):0;
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:12px;min-width:80px;color:#888">${r}</span><div style="flex:1;height:8px;border-radius:4px;background:#f0ede8"><div style="width:${pct}%;height:100%;border-radius:4px;background:#c0392b"></div></div><span style="font-size:12px;color:#888;min-width:60px">${n} fl. (${pct}%)</span></div>`;
+  }).join('');
+}
+
+function exportExcel(){
+  const ws=XLSX.utils.json_to_sheet(wines.map(w=>({Etiket:w.etiket,Type:w.type,Årgang:w.aargang||'',Region:w.region||'',Drikkeklar:w.drikkeklar||'',Reol:w.reol,Hylde:w.hylde,Kolonne:w.kol,Hyldeplads:hyldeId(w),'På køl':w.paakoel?'Ja':'Nej','Pris (kr.)':w.pris!=null?w.pris:'gave','Prisestimat':w.prisestimat||'',Anskaffelse:w.ansk||'',Bemærkninger:w.bem||'',Status:w.drukket?'Drukket':'På lager','Drukket dato':w.drukketDato||''})));
+  const wb2=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb2,ws,'Lagerliste');
+  XLSX.writeFile(wb2,'Vinkælderen.xlsx');
+}
+
+function renderHistorik(q=''){
+  const body=document.getElementById('historik-body');
+  const q2=(q||'').toLowerCase();
+  const drukket=wines.filter(w=>w.drukket&&(!q2||[w.etiket,w.region||'',w.type,String(w.aargang||''),w.bem||''].some(s=>s.toLowerCase().includes(q2))))
+    .sort((a,b)=>(b.drukketDato||'').localeCompare(a.drukketDato||''));
+  if(!drukket.length){body.innerHTML=`<tr><td colspan="6" style="text-align:center;color:#888;padding:20px">${q2?'Ingen resultater':'Ingen vine drukket endnu'}</td></tr>`;return;}
+  body.innerHTML=drukket.map(w=>{
+    const tc=w.type.toLowerCase().replace('é','e').replace('ø','oe');
+    const gk=groupKey(w).replace(/'/g,"\\'");
+    return `<tr onclick="openDetailDrukket(${w.id})" style="cursor:pointer">
+      <td style="font-weight:500">${w.etiket}</td>
+      <td><span class="badge ${tc}">${w.type}</span></td>
+      <td>${w.aargang||'–'}</td>
+      <td>${w.region||'–'}</td>
+      <td style="font-size:11px;color:#888">${w.drukketDato||'–'}</td>
+      <td style="font-size:11px;color:#666">${w.bem||''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function showTab(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>{const ids=['overblik','liste','hylde','tilfoej','historik'];b.classList.toggle('active',ids[i]===t);});
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='liste')renderListe();
+  if(t==='overblik')renderOverblik();
+  if(t==='historik')renderHistorik();
+}
+
+function renderAll(){renderHylde();renderListe();renderOverblik();}
+initSlotRows();
+loadFromSheets();
+</script>
+</body>
+</html>
