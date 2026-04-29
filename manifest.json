@@ -1,6 +1,6 @@
 {
-  "name": "Vinkælderen",
-  "short_name": "Vinkælderen",
+  "name": "La Vinoteca",
+  "short_name": "La Vinoteca",
   "description": "Vinkælder lagerstyring",
   "start_url": "/Vinoteca/index.html",
   "scope": "/Vinoteca/",
