@@ -2,7 +2,7 @@
   "name": "La Vinoteca",
   "short_name": "La Vinoteca",
   "description": "Vinkælder lagerstyring",
-  "start_url": "/vinoteca/",
+  "start_url": "/vinoteca/index.html",
   "scope": "/vinoteca/",
   "display": "standalone",
   "background_color": "#f5f0eb",
